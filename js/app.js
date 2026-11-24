@@ -171,7 +171,7 @@ async function loginUserAccount(email, password) {
   }
 }
 
-const GOOGLE_CLIENT_ID = "PEGA_AQUI_TU_ID_DE_CLIENTE.apps.googleusercontent.com";
+const GOOGLE_CLIENT_ID = "545938383625-9nb14jbpcg24m0qqgv121f4ff86kf3bh.apps.googleusercontent.com";
 
 function loginWithGoogle() {
   return new Promise(resolve => {
