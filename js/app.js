@@ -207,23 +207,29 @@ async function loginUserAccount(email, password) {
 }
 
 async function loginWithGoogle() {
+  const provider = new firebase.auth.GoogleAuthProvider();
   try {
-    const provider = new firebase.auth.GoogleAuthProvider();
-    const cred = await auth.signInWithPopup(provider);
-    const user = cred.user;
-    const userRef = db.collection("users").doc(user.uid);
-    const snap = await userRef.get();
-
-    if (!snap.exists) {
-      const newState = {
-        ...defaultState(),
-        username: user.displayName || "Usuario",
-        email: user.email || "",
-        avatar: user.photoURL || ""
-      };
-      await userRef.set(newState);
-      return { ok: true, isNew: true, account: newState };
+    await auth.signInWithPopup(provider);
+    window.location.href = "scanner.html";
+  } catch (err) {
+    if (
+      err.code === "auth/popup-blocked" ||
+      err.code === "auth/operation-not-supported-in-this-environment"
+    ) {
+      await auth.signInWithRedirect(provider);
+    } else {
+      console.error(err);
+      showToast("No se pudo iniciar sesión con Google");
     }
+  }
+}
+
+// Recoge la sesión si el móvil usó redirección en lugar de ventana emergente
+auth.getRedirectResult().then(result => {
+  if (result && result.user) {
+    window.location.href = "scanner.html";
+  }
+}).catch(() => {});
 
     const data = snap.data();
     return {
