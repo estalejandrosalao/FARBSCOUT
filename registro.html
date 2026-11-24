@@ -89,18 +89,19 @@
       window.location.href = "onboarding.html";
     });
 
-    async function handleGoogleAuth() {
-      const err = document.getElementById("reg-error");
-      const btn = document.getElementById("btn-google");
-      btn.disabled = true;
-
-      const result = await loginWithGoogle();
-      btn.disabled = false;
-
-      if (!result.ok) {
-        err.textContent = result.error;
-        return;
-      }
+    async function handleGoogleAuth(btn) {
+  if (btn) btn.disabled = true;
+  try {
+    const res = await loginWithGoogle();
+    if (res.ok) {
+      window.location.href = res.isNew ? "onboarding.html" : "scanner.html";
+    } else if (res.error) {
+      showToast(res.error);
+    }
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
 
       err.textContent = "";
       window.location.href = result.isNew ? "onboarding.html" : "scanner.html";
