@@ -172,9 +172,15 @@ async function loginUserAccount(email, password) {
 }
 
 async function loginWithGoogle() {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  await auth.signInWithRedirect(provider);
+}
+
+async function checkGoogleRedirectResult() {
   try {
-    const provider = new firebase.auth.GoogleAuthProvider();
-    const cred = await auth.signInWithPopup(provider);
+    const cred = await auth.getRedirectResult();
+    if (!cred || !cred.user) return null;
+
     const user = cred.user;
     const userRef = db.collection("users").doc(user.uid);
     const snap = await userRef.get();
@@ -187,24 +193,11 @@ async function loginWithGoogle() {
         avatar: user.photoURL || ""
       };
       await userRef.set(newState);
-      return { ok: true, isNew: true, account: newState };
+      return { ok: true, isNew: true };
     }
-
-    const data = snap.data();
-    return {
-      ok: true,
-      isNew: false,
-      account: {
-        ...defaultState(),
-        ...data,
-        discovered: { ...emptyDiscovered(), ...(data.discovered || {}) }
-      }
-    };
+    return { ok: true, isNew: false };
   } catch (err) {
-    console.error("Google Auth Error:", err);
-    if (err.code === "auth/popup-closed-by-user") {
-      return { ok: false, error: "Se cerró la ventana de inicio de sesión" };
-    }
+    console.error("Google Redirect Error:", err);
     return { ok: false, error: mapFirebaseAuthError(err.code) };
   }
 }
