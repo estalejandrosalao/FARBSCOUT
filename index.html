@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="css/login.css" />
   <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#0b0b0f" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <link rel="apple-touch-icon" href="assets/FARBSCOUT_LOGO.png" />
@@ -30,9 +31,10 @@
       <a href="recuperar.html" class="forgot-link">¿Olvidaste tu contraseña?</a>
       <button type="submit" class="btn-grad">Iniciar sesión</button>
     </form>
+
     <div class="divider">o continúa con</div>
 
-    <button type="button" id="btn-google" class="btn-google" onclick="handleGoogleAuth()">
+    <button type="button" id="btn-google" class="btn-google" onclick="handleGoogleAuth(this)">
       <svg width="18" height="18" viewBox="0 0 48 48">
         <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
         <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
@@ -44,6 +46,7 @@
 
     <p class="auth-footer">¿Sin cuenta? <a href="registro.html">Regístrate aquí</a></p>
   </main>
+
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
@@ -79,36 +82,24 @@
       err.textContent = "";
       window.location.href = "scanner.html";
     });
-   async function handleGoogleAuth(btn) {
-  if (btn) btn.disabled = true;
-  try {
-    const res = await loginWithGoogle();
-    if (res.ok) {
-      window.location.href = res.isNew ? "onboarding.html" : "scanner.html";
-    } else if (res.error) {
-      showToast(res.error);
-    }
-  } finally {
-    if (btn) btn.disabled = false;
-  }
-}
 
-      err.textContent = "";
-      window.location.href = result.isNew ? "onboarding.html" : "scanner.html";
-    }
-  </script>
-  <script>
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js").catch(() => {});
+    async function handleGoogleAuth(btn) {
+      if (btn) btn.disabled = true;
+      try {
+        await loginWithGoogle();
+      } catch (e) {
+        if (btn) btn.disabled = false;
+        showToast("No se pudo iniciar la redirección con Google");
+      }
     }
 
-  checkGoogleRedirectResult().then(res => {
-  if (res && res.ok) {
-    window.location.href = res.isNew ? "onboarding.html" : "scanner.html";
-  } else if (res && res.error) {
-    showToast(res.error);
-  }
-});
+    checkGoogleRedirectResult().then(res => {
+      if (res && res.ok) {
+        window.location.href = res.isNew ? "onboarding.html" : "scanner.html";
+      } else if (res && res.error) {
+        showToast(res.error);
+      }
+    });
   </script>
 </body>
 </html>
