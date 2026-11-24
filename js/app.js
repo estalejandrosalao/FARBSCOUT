@@ -441,4 +441,7 @@ function showToast(text) {
   _toastTimer = setTimeout(() => el.classList.remove("show"), 2700);
 }
 
-if ("serviceWorker" in navigator && location.protocol.starts
+if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+  navigator.serviceWorker.register("./sw.js").catch(() => {});
+}
+// FIN DEL ARCHIVO app.js
