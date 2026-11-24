@@ -171,35 +171,51 @@ async function loginUserAccount(email, password) {
   }
 }
 
-async function loginWithGoogle() {
-  const provider = new firebase.auth.GoogleAuthProvider();
-  await auth.signInWithRedirect(provider);
-}
+const GOOGLE_CLIENT_ID = "PEGA_AQUI_TU_ID_DE_CLIENTE.apps.googleusercontent.com";
 
-async function checkGoogleRedirectResult() {
-  try {
-    const cred = await auth.getRedirectResult();
-    if (!cred || !cred.user) return null;
-
-    const user = cred.user;
-    const userRef = db.collection("users").doc(user.uid);
-    const snap = await userRef.get();
-
-    if (!snap.exists) {
-      const newState = {
-        ...defaultState(),
-        username: user.displayName || "Usuario",
-        email: user.email || "",
-        avatar: user.photoURL || ""
-      };
-      await userRef.set(newState);
-      return { ok: true, isNew: true };
+function loginWithGoogle() {
+  return new Promise(resolve => {
+    if (!window.google || !google.accounts || !google.accounts.id) {
+      resolve({ ok: false, error: "Cargando Google, intenta de nuevo en un segundo" });
+      return;
     }
-    return { ok: true, isNew: false };
-  } catch (err) {
-    console.error("Google Redirect Error:", err);
-    return { ok: false, error: mapFirebaseAuthError(err.code) };
-  }
+
+    google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      use_fedcm_for_prompt: true,
+      callback: async response => {
+        try {
+          const credential = firebase.auth.GoogleAuthProvider.credential(response.credential);
+          const cred = await auth.signInWithCredential(credential);
+          const user = cred.user;
+          const userRef = db.collection("users").doc(user.uid);
+          const snap = await userRef.get();
+
+          if (!snap.exists) {
+            const newState = {
+              ...defaultState(),
+              username: user.displayName || "Usuario",
+              email: user.email || "",
+              avatar: user.photoURL || ""
+            };
+            await userRef.set(newState);
+            resolve({ ok: true, isNew: true });
+            return;
+          }
+          resolve({ ok: true, isNew: false });
+        } catch (err) {
+          console.error("Error GIS Auth:", err);
+          resolve({ ok: false, error: mapFirebaseAuthError(err.code) });
+        }
+      }
+    });
+
+    google.accounts.id.prompt(notification => {
+      if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+        resolve({ ok: false, error: "El navegador bloqueó el selector de Google. Verifica los permisos o usa tu correo." });
+      }
+    });
+  });
 }
 
 async function sendPasswordReset(email) {
