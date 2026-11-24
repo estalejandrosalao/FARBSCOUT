@@ -56,45 +56,6 @@ async function askAIColorName({ hex, r, g, b, hsl }) {
   return null;
 }
 
-async function askAIColorName({ hex, r, g, b, hsl }) {
-  if (aiColorCache.has(hex)) return aiColorCache.get(hex);
-
-  const prompt = `Responde ÚNICAMENTE con el nombre comercial estándar en español (carta Pantone, RAL o diseño) del color HEX ${hex} (RGB: ${r}, ${g}, ${b}). Máximo 3 palabras, sin comillas, sin punto final ni explicaciones.`;
-
-  try {
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${firebaseConfig.apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: 0.2,
-            thinkingConfig: { thinkingBudget: 0 }
-          }
-        })
-      }
-    );
-
-    const data = await res.json();
-    if (!res.ok) {
-      console.error("Error Gemini API:", res.status, data.error?.message || data);
-      return null;
-    }
-
-    const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-    const aiName = raw.trim().replace(/["'.\n]/g, "");
-
-    if (aiName && aiName.length <= 40) {
-      aiColorCache.set(hex, aiName);
-      return aiName;
-    }
-  } catch (err) {
-    console.error("Fallo de red al consultar Gemini:", err);
-  }
-  return null;
-}
 const COLOR_CATEGORIES = [
   { id: "Rojos", name: "Rojos", color: "#ef4444" },
   { id: "Naranjas", name: "Naranjas", color: "#f97316" },
@@ -151,8 +112,12 @@ function mapFirebaseAuthError(code) {
       return "Contraseña incorrecta";
     case "auth/too-many-requests":
       return "Demasiados intentos. Intenta más tarde";
+    case "auth/unauthorized-domain":
+      return "Dominio no autorizado en Firebase Authentication";
+    case "auth/popup-blocked":
+      return "El navegador bloqueó la ventana emergente de Google";
     default:
-      return "Ocurrió un error al conectar con el servidor";
+      return `Error de autenticación (${code || "desconocido"})`;
   }
 }
 
@@ -236,6 +201,7 @@ async function loginWithGoogle() {
       }
     };
   } catch (err) {
+    console.error("Google Auth Error:", err);
     if (err.code === "auth/popup-closed-by-user") {
       return { ok: false, error: "Se cerró la ventana de inicio de sesión" };
     }
@@ -474,3 +440,5 @@ function showToast(text) {
   clearTimeout(_toastTimer);
   _toastTimer = setTimeout(() => el.classList.remove("show"), 2700);
 }
+
+if ("serviceWorker" in navigator && location.protocol.starts
