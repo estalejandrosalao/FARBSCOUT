@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FarbScout — Scanner y Logros</title>
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/app.css" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0b0b0f" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="apple-touch-icon" href="assets/FARBSCOUT_LOGO.png" />
+</head>
+<body>
+  <main class="page-shell">
+    <header class="topbar">
+      <div class="topbar-left">
+        <img src="assets/FARBSCOUT_LOGO.png" alt="Logo FarbScout" class="topbar-logo" />
+        <span class="title-grad">FarbScout</span>
+      </div>
+      <div class="topbar-right">
+        <button class="circle-btn" title="Historial de colores" onclick="openHistory()">🕒</button>
+        <a href="perfil.html" class="circle-btn" id="hdr-avatar" style="text-decoration:none; background:linear-gradient(135deg,#7c3aed,#db2777);">A</a>
+      </div>
+    </header>
+
+    <div class="tabs">
+      <button id="btn-tab-scanner" class="tab-btn active" onclick="setTab('scanner')">🎯 Scanner</button>
+      <button id="btn-tab-logros" class="tab-btn" onclick="setTab('logros')">🏆 Logros</button>
+    </div>
+
+    <!-- SCANNER -->
+    <section id="sec-scanner">
+      <input type="file" id="img-input" accept="image/*" hidden onchange="onFileSelected(event)" />
+      <video id="cam-video" autoplay playsinline muted hidden></video>
+
+      <div id="dropzone" class="source-actions">
+        <button type="button" class="source-btn" onclick="document.getElementById('img-input').click()">
+          <span style="font-size: 32px;">🖼️</span>
+          <span style="font-weight: 700; font-size: 15px;">Subir imagen</span>
+          <span style="color: var(--muted); font-size: 12px;">Galería o archivo</span>
+        </button>
+
+        <button type="button" class="source-btn" onclick="startCamera()">
+          <span style="font-size: 32px;">📷</span>
+          <span style="font-weight: 700; font-size: 15px;">Cámara en vivo</span>
+          <span style="color: var(--muted); font-size: 12px;">Detectar en tiempo real</span>
+        </button>
+      </div>
+
+      <div id="stage" class="stage" style="display: none;">
+        <button class="close-img" onclick="clearMedia()">✕</button>
+        <div id="canvas-box" class="canvas-box">
+          <canvas id="canvas"></canvas>
+          <div id="crosshair" class="crosshair"></div>
+        </div>
+
+        <div id="cam-controls" class="cam-controls" style="display: none;">
+          <button type="button" id="btn-cam-freeze" class="cam-pill" onclick="toggleFreezeCamera()">⏸ Pausar frame</button>
+          <button type="button" class="cam-pill primary" onclick="captureCurrentCrosshair()">🎯 Capturar color</button>
+        </div>
+
+        <p id="stage-hint" style="text-align:center; color:var(--muted); font-size:12px; margin-top:8px;">
+          Desliza para ver el color · suelta para capturar
+        </p>
+      </div>
+
+      <div id="result-panel" class="panel" style="display: none;">
+        <div id="banner" class="banner">
+          <div id="c-name" style="font-size: 20px; font-weight: 800;"></div>
+          <div id="c-hex-top" style="font-size: 13px; opacity: 0.92;"></div>
+        </div>
+
+        <div class="row-val">
+          <div><strong style="color:var(--muted); margin-right:8px;">HEX</strong><span id="v-hex"></span></div>
+          <button class="copy-mini" onclick="copyVal('v-hex')">Copiar</button>
+        </div>
+        <div class="row-val">
+          <div><strong style="color:var(--muted); margin-right:8px;">RGB</strong><span id="v-rgb"></span></div>
+          <button class="copy-mini" onclick="copyVal('v-rgb')">Copiar</button>
+        </div>
+        <div class="row-val">
+          <div><strong style="color:var(--muted); margin-right:8px;">HSL</strong><span id="v-hsl"></span></div>
+          <button class="copy-mini" onclick="copyVal('v-hsl')">Copiar</button>
+        </div>
+        <div class="row-val">
+          <div><strong style="color:var(--muted); margin-right:8px;">HTML</strong><span id="v-html"></span></div>
+          <button class="copy-mini" onclick="copyVal('v-html')">Copiar</button>
+        </div>
+
+        <div style="font-weight:700; font-size:14px; margin-top:12px;">Paleta</div>
+        <div class="p-tabs">
+          <button class="p-tab active" onclick="setMode('analogous', this)">Análogas</button>
+          <button class="p-tab" onclick="setMode('complementary', this)">Complementario</button>
+          <button class="p-tab" onclick="setMode('triadic', this)">Triádica</button>
+        </div>
+        <div id="swatches" class="swatches"></div>
+      </div>
+    </section>
+
+    <!-- LOGROS -->
+    <section id="sec-logros" style="display: none;">
+      <div class="ach-summary">
+        <div style="font-size: 32px;">🏆</div>
+        <div>
+          <div id="ach-total" style="font-size: 22px; font-weight: 800;">0</div>
+          <div id="ach-sub" style="font-size: 13px; color: var(--muted);">colores únicos descubiertos · 0/11 categorías desbloqueadas</div>
+        </div>
+      </div>
+      <div id="cats-container"></div>
+    </section>
+  </main>
+
+  <!-- SHEET HISTORIAL -->
+  <div id="sheet-history" class="sheet-bg" onclick="if(event.target===this)this.classList.remove('open')">
+    <div class="sheet">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+        <strong>Historial de colores</strong>
+        <span id="hist-count" style="font-size:12px; color:var(--muted);">0 colores</span>
+      </div>
+      <div id="hist-list"></div>
+    </div>
+  </div>
+
+  <!-- SHEET DETALLE DEL COLOR -->
+  <div id="sheet-detail" class="sheet-bg" onclick="if(event.target===this)this.classList.remove('open')">
+    <div class="sheet">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+        <button class="copy-mini" onclick="backFromDetail()">← Detalle del color</button>
+        <button class="copy-mini" onclick="document.getElementById('sheet-detail').classList.remove('open')">✕</button>
+      </div>
+      <div id="detail-banner" class="banner">
+        <div id="d-name" style="font-size: 20px; font-weight: 800;"></div>
+        <div id="d-hex" style="font-size: 13px;"></div>
+      </div>
+      <div class="row-val"><span>HEX: <strong id="d-v-hex"></strong></span><button class="copy-mini" onclick="copyVal('d-v-hex')">Copiar</button></div>
+      <div class="row-val"><span>RGB: <strong id="d-v-rgb"></strong></span><button class="copy-mini" onclick="copyVal('d-v-rgb')">Copiar</button></div>
+      <div class="row-val"><span>HSL: <strong id="d-v-hsl"></strong></span><button class="copy-mini" onclick="copyVal('d-v-hsl')">Copiar</button></div>
+      <div class="row-val"><span>HTML: <strong id="d-v-html"></strong></span><button class="copy-mini" onclick="copyVal('d-v-html')">Copiar</button></div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore-compat.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    let state = defaultState();
+    initAuthenticatedPage(loadedState => {
+      state = loadedState;
+      paintHeaderAvatar();
+    });
+    let activeColor = null;
+    let mode = "analogous";
+    let dragging = false;
+    let openCats = new Set(["Amarillos", "Azules"]);
+
+    // Variables de cámara en vivo
+    let camStream = null;
+    let camRafId = null;
+    let camFrozen = false;
+    let lastPx = { x: 0, y: 0 };
+
+    function paintHeaderAvatar() {
+      const el = document.getElementById("hdr-avatar");
+      if (state.avatar) el.innerHTML = `<img src="${state.avatar}" alt="Avatar" />`;
+      else el.textContent = (state.username?.[0] || "A").toUpperCase();
+    }
+    paintHeaderAvatar();
+
+    function setTab(tab) {
+      document.getElementById("btn-tab-scanner").classList.toggle("active", tab === "scanner");
+      document.getElementById("btn-tab-logros").classList.toggle("active", tab === "logros");
+      document.getElementById("sec-scanner").style.display = tab === "scanner" ? "block" : "none";
+      document.getElementById("sec-logros").style.display = tab === "logros" ? "block" : "none";
+      if (tab === "logros") {
+        stopCameraStream();
+        renderLogros();
+      }
+    }
+
+    // --- MODO IMAGEN ---
+    function onFileSelected(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      stopCameraStream();
+      document.getElementById("cam-controls").style.display = "none";
+      document.getElementById("stage-hint").textContent = "Desliza para ver el color · suelta para capturar";
+
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const img = new Image();
+        img.onload = () => {
+          const c = document.getElementById("canvas");
+          const scale = img.width > 700 ? 700 / img.width : 1;
+          c.width = Math.round(img.width * scale);
+          c.height = Math.round(img.height * scale);
+          c.getContext("2d", { willReadFrequently: true }).drawImage(img, 0, 0, c.width, c.height);
+
+          document.getElementById("dropzone").style.display = "none";
+          document.getElementById("stage").style.display = "block";
+
+          const cx = Math.floor(c.width / 2);
+          const cy = Math.floor(c.height / 2);
+          lastPx = { x: cx, y: cy };
+          moveCrosshair(50, 50);
+          pickPixel(cx, cy, false);
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // --- MODO CÁMARA EN VIVO ---
+    async function startCamera() {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        showToast("Tu navegador no soporta acceso a la cámara");
+        return;
+      }
+
+      try {
+        camStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 } },
+          audio: false
+        });
+
+        const video = document.getElementById("cam-video");
+        video.srcObject = camStream;
+        await video.play();
+
+        const c = document.getElementById("canvas");
+        const scale = video.videoWidth > 490 ? 490 / video.videoWidth : 1;
+        c.width = Math.round((video.videoWidth || 480) * scale);
+        c.height = Math.round((video.videoHeight || 640) * scale);
+
+        camFrozen = false;
+        document.getElementById("btn-cam-freeze").textContent = "⏸ Pausar frame";
+        document.getElementById("dropzone").style.display = "none";
+        document.getElementById("stage").style.display = "block";
+        document.getElementById("cam-controls").style.display = "flex";
+        document.getElementById("stage-hint").textContent = "Apunta o mueve la mira · suelta o pulsa Capturar";
+
+        lastPx = { x: Math.floor(c.width / 2), y: Math.floor(c.height / 2) };
+        moveCrosshair(50, 50);
+        renderCameraLoop();
+      } catch (err) {
+        showToast("No se pudo acceder a la cámara (revisa los permisos)");
+      }
+    }
+
+    function renderCameraLoop() {
+      if (!camStream) return;
+      const video = document.getElementById("cam-video");
+      const c = document.getElementById("canvas");
+      const ctx = c.getContext("2d", { willReadFrequently: true });
+
+      if (!camFrozen && video.readyState >= 2) {
+        ctx.drawImage(video, 0, 0, c.width, c.height);
+        pickPixel(lastPx.x, lastPx.y, false);
+      }
+      camRafId = requestAnimationFrame(renderCameraLoop);
+    }
+
+    function toggleFreezeCamera() {
+      camFrozen = !camFrozen;
+      document.getElementById("btn-cam-freeze").textContent = camFrozen ? "▶ Reanudar" : "⏸ Pausar frame";
+    }
+
+    function captureCurrentCrosshair() {
+      pickPixel(lastPx.x, lastPx.y, true);
+      showToast(`Color capturado: ${activeColor.name} (${activeColor.hex})`);
+    }
+
+    function stopCameraStream() {
+      if (camRafId) cancelAnimationFrame(camRafId);
+      camRafId = null;
+      if (camStream) {
+        camStream.getTracks().forEach(track => track.stop());
+        camStream = null;
+      }
+      camFrozen = false;
+    }
+
+    function clearMedia() {
+      stopCameraStream();
+      document.getElementById("img-input").value = "";
+      document.getElementById("stage").style.display = "none";
+      document.getElementById("cam-controls").style.display = "none";
+      document.getElementById("dropzone").style.display = "grid";
+      document.getElementById("crosshair").style.display = "none";
+    }
+
+    // --- INTERACCIÓN CON CANVAS ---
+    const cBox = document.getElementById("canvas-box");
+    const canvas = document.getElementById("canvas");
+
+    function coords(cx, cy) {
+      const boxRect = cBox.getBoundingClientRect();
+      const canvasRect = canvas.getBoundingClientRect();
+
+      // Posición exacta del cursor dentro del canvas visible
+      const relX = Math.max(0, Math.min(canvasRect.width - 1, cx - canvasRect.left));
+      const relY = Math.max(0, Math.min(canvasRect.height - 1, cy - canvasRect.top));
+
+      // Coordenada en píxeles reales del canvas
+      const x = Math.floor((relX / canvasRect.width) * canvas.width);
+      const y = Math.floor((relY / canvasRect.height) * canvas.height);
+
+      // Posición visual exacta en píxeles dentro de #canvas-box
+      const leftPx = (canvasRect.left - boxRect.left) + relX;
+      const topPx = (canvasRect.top - boxRect.top) + relY;
+
+      return { x, y, leftPx, topPx };
+    }
+
+    cBox.addEventListener("pointerdown", e => {
+      dragging = true;
+      cBox.setPointerCapture(e.pointerId);
+      const p = coords(e.clientX, e.clientY);
+      lastPx = { x: p.x, y: p.y };
+      moveCrosshair(p.leftPx, p.topPx);
+      pickPixel(p.x, p.y, false);
+    });
+
+    cBox.addEventListener("pointermove", e => {
+      if (!dragging) return;
+      const p = coords(e.clientX, e.clientY);
+      lastPx = { x: p.x, y: p.y };
+      moveCrosshair(p.leftPx, p.topPx);
+      pickPixel(p.x, p.y, false);
+    });
+
+    cBox.addEventListener("pointerup", e => {
+      if (!dragging) return;
+      dragging = false;
+      const p = coords(e.clientX, e.clientY);
+      lastPx = { x: p.x, y: p.y };
+      moveCrosshair(p.leftPx, p.topPx);
+      pickPixel(p.x, p.y, true);
+    });
+
+    function moveCrosshair(leftPx, topPx) {
+      const ch = document.getElementById("crosshair");
+      ch.style.display = "block";
+      ch.style.left = typeof leftPx === "number" ? `${leftPx}px` : leftPx;
+      ch.style.top = typeof topPx === "number" ? `${topPx}px` : topPx;
+    }
+
+    function pickPixel(x, y, commit) {
+      const [r, g, b] = canvas.getContext("2d", { willReadFrequently: true }).getImageData(x, y, 1, 1).data;
+      const hex = rgbToHex(r, g, b);
+      const hsl = rgbToHsl(r, g, b);
+      const category = classifyColor(r, g, b, hsl);
+      const localName = nameColor(r, g, b, hsl, category);
+      const cachedName = aiColorCache.get(hex);
+
+      activeColor = { r, g, b, hex, hsl, category, name: cachedName || localName };
+      paintResult(activeColor);
+
+      if (commit) {
+        state.searches += 1;
+        state.history.unshift(activeColor);
+        if (state.history.length > 40) state.history.pop();
+
+        const list = state.discovered[category] || [];
+        if (!list.some(item => item.hex === hex)) {
+          list.push(activeColor);
+          state.discovered[category] = list;
+          showToast(`🏆 ¡Logro desbloqueado! ${category}: ${list.length} colores únicos`);
+        }
+        saveState(state);
+
+        if (!cachedName) {
+          document.getElementById("c-name").textContent = `${localName} ✨`;
+          askAIColorName(activeColor).then(aiName => {
+            if (!aiName) {
+              if (activeColor.hex === hex) document.getElementById("c-name").textContent = localName;
+              return;
+            }
+            activeColor.name = aiName;
+            if (activeColor.hex === hex) {
+              document.getElementById("c-name").textContent = aiName;
+            }
+            // Actualiza también el nombre en el historial y logros guardados
+            const histItem = state.history.find(h => h.hex === hex);
+            if (histItem) histItem.name = aiName;
+            const discItem = (state.discovered[category] || []).find(d => d.hex === hex);
+            if (discItem) discItem.name = aiName;
+
+            saveState(state);
+          });
+        }
+      }
+    }
+
+    function paintResult(c) {
+      const banner = document.getElementById("banner");
+      const txtStyle = getBannerTextStyles(c.hsl);
+      document.getElementById("result-panel").style.display = "block";
+      banner.style.background = c.hex;
+      banner.style.color = txtStyle.color;
+      banner.style.textShadow = txtStyle.textShadow;
+      document.getElementById("c-name").textContent = c.name;
+      document.getElementById("c-hex-top").textContent = c.hex;
+      document.getElementById("v-hex").textContent = c.hex;
+      document.getElementById("v-rgb").textContent = `rgb(${c.r}, ${c.g}, ${c.b})`;
+      document.getElementById("v-hsl").textContent = `hsl(${c.hsl.h}, ${c.hsl.s}%, ${c.hsl.l}%)`;
+      document.getElementById("v-html").textContent = `background-color: ${c.hex};`;
+      paintPalette();
+    }
+
+    function setMode(m, btn) {
+      mode = m;
+      document.querySelectorAll(".p-tab").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      paintPalette();
+    }
+
+    function paintPalette() {
+      if (!activeColor) return;
+      const { h, s, l } = activeColor.hsl;
+      const hues = mode === "analogous"
+        ? [h - 40, h - 20, h, h + 20, h + 40]
+        : mode === "complementary"
+        ? [h, h + 15, h + 165, h + 180, h + 195]
+        : [h, h + 120, h + 240, h + 60, h + 180];
+
+      const box = document.getElementById("swatches");
+      box.innerHTML = "";
+      hues.forEach(raw => {
+        const norm = ((raw % 360) + 360) % 360;
+        const { r, g, b } = hslToRgb(norm, Math.max(s, 65), Math.min(Math.max(l, 25), 75));
+        const hex = rgbToHex(r, g, b);
+        const div = document.createElement("div");
+        div.innerHTML = `<div class="swatch-box" style="background:${hex}" onclick="copyStr('${hex}')"></div><div class="swatch-hex">${hex}</div>`;
+        box.appendChild(div);
+      });
+    }
+
+    function renderLogros() {
+      document.getElementById("ach-total").textContent = totalUniqueColors(state);
+      document.getElementById("ach-sub").textContent = `${totalUniqueColors(state)} colores únicos descubiertos · ${unlockedCategoriesCount(state)}/11 categorías desbloqueadas`;
+
+      const cont = document.getElementById("cats-container");
+      cont.innerHTML = "";
+      COLOR_CATEGORIES.forEach(cat => {
+        const items = state.discovered[cat.id] || [];
+        const pct = Math.min(100, items.length * 20);
+        const isOpen = openCats.has(cat.id);
+        const card = document.createElement("div");
+        card.className = "cat-card";
+        card.innerHTML = `
+          <div class="cat-head" onclick="toggleCat('${cat.id}')">
+            <span style="display:flex; align-items:center; gap:10px; font-weight:600;">
+              <span style="width:14px; height:14px; border-radius:999px; background:${cat.color}; display:inline-block;"></span>
+              ${cat.name} ${items.length > 0 ? "🏅" : ""}
+            </span>
+            <span style="font-size:12px; color:var(--muted);">${items.length}/5 ${isOpen ? "▲" : "▼"}</span>
+          </div>
+          <div class="bar-bg"><div class="bar-fill" style="width:${pct}%;"></div></div>
+          ${isOpen && items.length > 0 ? `
+            <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;">
+              ${items.map(it => `<span onclick="copyStr('${it.hex}')" style="cursor:pointer; background:${it.hex}; color:#fff; text-shadow:0 1px 4px #000; padding:4px 8px; border-radius:8px; font-size:11px; font-weight:700;">${it.hex}</span>`).join("")}
+            </div>
+          ` : ""}
+        `;
+        cont.appendChild(card);
+      });
+    }
+
+    function toggleCat(id) {
+      if (openCats.has(id)) openCats.delete(id);
+      else openCats.add(id);
+      renderLogros();
+    }
+
+    function openHistory() {
+      document.getElementById("hist-count").textContent = `${state.history.length} colores`;
+      const list = document.getElementById("hist-list");
+      if (!state.history.length) {
+        list.innerHTML = `<p style="color:var(--muted); font-size:13px; text-align:center; padding:18px 0;">Aún no has capturado colores.</p>`;
+      } else {
+        list.innerHTML = state.history.map((item, idx) => `
+          <div class="row-val" style="cursor:pointer;" onclick="openDetail(${idx})">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <span style="width:30px; height:30px; border-radius:8px; background:${item.hex}; display:inline-block;"></span>
+              <div>
+                <div style="font-weight:700;">${item.name}</div>
+                <div style="font-size:12px; color:var(--muted);">${item.hex} · rgb(${item.r}, ${item.g}, ${item.b})</div>
+              </div>
+            </div>
+            <span style="color:var(--muted);">›</span>
+          </div>
+        `).join("");
+      }
+      document.getElementById("sheet-history").classList.add("open");
+    }
+
+    function openDetail(idx) {
+      const item = state.history[idx];
+      if (!item) return;
+      document.getElementById("sheet-history").classList.remove("open");
+      document.getElementById("detail-banner").style.background = item.hex;
+      document.getElementById("d-name").textContent = item.name;
+      document.getElementById("d-hex").textContent = item.hex;
+      document.getElementById("d-v-hex").textContent = item.hex;
+      document.getElementById("d-v-rgb").textContent = `rgb(${item.r}, ${item.g}, ${item.b})`;
+      document.getElementById("d-v-hsl").textContent = `hsl(${item.hsl.h}, ${item.hsl.s}%, ${item.hsl.l}%)`;
+      document.getElementById("d-v-html").textContent = `background-color: ${item.hex};`;
+      document.getElementById("sheet-detail").classList.add("open");
+    }
+
+    function backFromDetail() {
+      document.getElementById("sheet-detail").classList.remove("open");
+      document.getElementById("sheet-history").classList.add("open");
+    }
+
+    function copyVal(id) {
+      copyStr(document.getElementById(id).textContent);
+    }
+
+    function copyStr(str) {
+      navigator.clipboard?.writeText(str);
+      showToast(`Copiado: ${str}`);
+    }
+
+    window.addEventListener("beforeunload", stopCameraStream);
+    const uploadBtn = document.querySelector("#dropzone .source-btn");
+    ["dragenter", "dragover"].forEach(evt => {
+      uploadBtn.addEventListener(evt, e => {
+        e.preventDefault();
+        uploadBtn.classList.add("drag-over");
+      });
+    });
+    ["dragleave", "drop"].forEach(evt => {
+      uploadBtn.addEventListener(evt, e => {
+        e.preventDefault();
+        uploadBtn.classList.remove("drag-over");
+      });
+    });
+    uploadBtn.addEventListener("drop", e => {
+      const file = e.dataTransfer?.files?.[0];
+      if (file && file.type.startsWith("image/")) {
+        onFileSelected({ target: { files: [file] } });
+      }
+    });
+  </script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("./sw.js").catch(() => {});
+    }
+  </script>
+</body>
+</html>

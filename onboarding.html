@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FarbScout — Bienvenida</title>
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/onboarding.css" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0b0b0f" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="apple-touch-icon" href="assets/FARBSCOUT_LOGO.png" />
+</head>
+<body>
+  <main class="page-shell">
+    <div class="ob-top">
+      <div class="ob-brand-mini">
+        <img src="assets/FARBSCOUT_LOGO.png" alt="Logo FarbScout" class="topbar-logo" />
+        <span class="title-grad">FarbScout</span>
+      </div>
+      <button class="ob-skip" onclick="window.location.href='scanner.html'">Saltar</button>
+    </div>
+
+    <div class="ob-center">
+      <div>
+        <div id="ob-icon" class="ob-card-icon">🖼️</div>
+        <h1 id="ob-title" class="ob-title">Sube cualquier imagen</h1>
+        <p id="ob-desc" class="ob-desc">Importa fotos, capturas o ilustraciones y convierte cada pixel en información de color precisa.</p>
+      </div>
+
+      <div style="width: 100%;">
+        <div class="ob-dots">
+          <span id="dot-0" class="ob-dot active" style="background:#e13b78;"></span>
+          <span id="dot-1" class="ob-dot"></span>
+          <span id="dot-2" class="ob-dot"></span>
+        </div>
+        <button id="ob-btn" class="btn-grad" onclick="stepOnboarding()">Siguiente</button>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const STEPS = [
+      { icon: "🖼️", title: "Sube cualquier imagen", desc: "Importa fotos, capturas o ilustraciones y convierte cada pixel en información de color precisa.", color: "#e13b78", btn: "Siguiente", cls: "btn-grad" },
+      { icon: "🌈", title: "Paletas al instante", desc: "Genera paletas análogicas, complementarias y triádicas basadas en el color capturado.", color: "#8b46f6", btn: "Siguiente", cls: "btn-grad" },
+      { icon: "🏆", title: "Colecciona logros", desc: "Descubre colores de cada familia cromática y desbloquea insignias únicas en tu perfil.", color: "#f5b700", btn: "¡Comenzar!", cls: "btn-gold" }
+    ];
+    let idx = 0;
+
+    function stepOnboarding() {
+      if (idx < STEPS.length - 1) {
+        idx++;
+        const s = STEPS[idx];
+        document.getElementById("ob-icon").textContent = s.icon;
+        document.getElementById("ob-title").textContent = s.title;
+        document.getElementById("ob-desc").textContent = s.desc;
+        [0, 1, 2].forEach(i => {
+          const d = document.getElementById("dot-" + i);
+          d.classList.toggle("active", i === idx);
+          d.style.background = i === idx ? s.color : "#2b2b36";
+        });
+        const btn = document.getElementById("ob-btn");
+        btn.textContent = s.btn;
+        btn.className = s.cls;
+      } else {
+        window.location.href = "scanner.html";
+      }
+    }
+  </script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("./sw.js").catch(() => {});
+    }
+  </script>
+</body>
+</html>

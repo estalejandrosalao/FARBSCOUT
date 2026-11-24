@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FarbScout — Recuperar contraseña</title>
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/login.css" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0b0b0f" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="apple-touch-icon" href="assets/FARBSCOUT_LOGO.png" />
+</head>
+<body>
+  <main class="page-shell auth-wrap">
+    <a href="index.html" class="back-link">← Volver al inicio de sesión</a>
+    <div class="brand-logo-wrap">
+      <img src="assets/FARBSCOUT_LOGO.png" alt="Logo FarbScout" class="brand-logo" />
+    </div>
+    <h1 class="title-grad auth-title" style="font-size: 26px;">Recuperar contraseña</h1>
+    <p class="auth-subtitle">Te enviaremos un enlace para restablecer tu contraseña.</p>
+
+    <form id="recover-form" class="auth-form" novalidate>
+      <input id="recover-email" class="input-box" type="email" placeholder="Correo electrónico" />
+      <span id="recover-error" class="error-msg"></span>
+      <button type="submit" class="btn-grad">Enviar enlace</button>
+    </form>
+
+    <div id="recover-success" class="success-box">
+      <div style="font-size: 28px; margin-bottom: 6px;">📧</div>
+      <div style="font-weight: 700; color: #34d399;">¡Enlace enviado!</div>
+      <p id="recover-detail" style="font-size: 13px; color: var(--muted); margin-top: 4px;"></p>
+    </div>
+  </main>
+
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    document.getElementById("recover-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = document.getElementById("recover-email").value.trim();
+      const err = document.getElementById("recover-error");
+
+      if (!email || !isValidEmail(email)) {
+        err.textContent = "Ingresa un correo válido";
+        return;
+      }
+
+      const res = await sendPasswordReset(email);
+      if (!res.ok) {
+        err.textContent = res.error;
+        return;
+      }
+
+      err.textContent = "";
+      document.getElementById("recover-detail").textContent = `Revisa ${email} (y tu carpeta de spam) para restablecer tu contraseña.`;
+      document.getElementById("recover-success").style.display = "block";
+    });
+  </script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("./sw.js").catch(() => {});
+    }
+  </script>
+</body>
+</html>

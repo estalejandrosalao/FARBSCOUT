@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FarbScout — Perfil</title>
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/perfil.css" />
+  <link rel="stylesheet" href="css/app.css" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0b0b0f" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="apple-touch-icon" href="assets/FARBSCOUT_LOGO.png" />
+</head>
+<body>
+  <main class="page-shell">
+    <div class="prof-top">
+      <a href="scanner.html" class="circle-btn" style="text-decoration:none;">←</a>
+      <div class="prof-top-brand">
+        <img src="assets/FARBSCOUT_LOGO.png" alt="Logo FarbScout" class="topbar-logo" style="width:22px; height:22px;" />
+        <span>PERFIL</span>
+      </div>
+      <div style="width: 38px;"></div>
+    </div>
+
+    <div class="prof-center">
+      <div class="avatar-wrap">
+        <div id="prof-avatar" class="avatar-lg">A</div>
+        <label for="av-file" class="cam-badge" title="Cambiar foto">📷</label>
+        <input type="file" id="av-file" accept="image/*" hidden onchange="changeAvatar(event)" />
+      </div>
+      <h1 id="prof-name" style="font-size: 20px; font-weight: 800;"></h1>
+      <p id="prof-email" style="font-size: 13px; color: var(--muted); margin-top: 2px;"></p>
+      <button style="background:transparent; border:none; color:#c084fc; font-size:13px; margin-top:6px; cursor:pointer;" onclick="document.getElementById('av-file').click()">
+        Cambiar foto de perfil
+      </button>
+    </div>
+
+    <div class="stats-3">
+      <div class="stat-box">
+        <div id="st-colors" style="font-size: 20px; font-weight: 800;">0</div>
+        <div style="font-size: 12px; color: var(--muted);">Colores únicos</div>
+      </div>
+      <div class="stat-box">
+        <div id="st-searches" style="font-size: 20px; font-weight: 800;">0</div>
+        <div style="font-size: 12px; color: var(--muted);">Búsquedas</div>
+      </div>
+      <div class="stat-box">
+        <div id="st-cats" style="font-size: 20px; font-weight: 800;">0/11</div>
+        <div style="font-size: 12px; color: var(--muted);">Categorías</div>
+      </div>
+    </div>
+
+    <div class="prof-card">
+      <div style="font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 10px;">PROGRESO POR CATEGORÍA</div>
+      <div id="cat-progress-list"></div>
+    </div>
+
+    <div class="prof-card">
+      <div style="font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 10px;">CUENTA</div>
+      <button class="action-item" onclick="openRename()">
+        <span>✏️ Cambiar nombre de usuario <small id="cur-name-hint" style="color:var(--muted); display:block;"></small></span>
+        <span>›</span>
+      </button>
+      <button class="action-item" onclick="openRecoverModal()">
+        <span>🔑 Recuperar contraseña <small style="color:var(--muted); display:block;">Te enviaremos un enlace al correo</small></span>
+        <span>›</span>
+      </button>
+      <button class="logout-btn" onclick="document.getElementById('m-logout').classList.add('open')">Cerrar sesión</button>
+    </div>
+  </main>
+
+  <!-- MODAL CAMBIAR NOMBRE -->
+  <div id="m-rename" class="sheet-bg" onclick="if(event.target===this)this.classList.remove('open')">
+    <div class="sheet">
+      <h3 style="margin-bottom: 6px;">Cambiar nombre</h3>
+      <p style="font-size: 13px; color: var(--muted); margin-bottom: 12px;">Elige el nombre que aparecerá en tu perfil.</p>
+      <input id="new-name-input" class="input-box" type="text" />
+      <p id="name-ok" style="color:#34d399; font-size:13px; margin-top:8px; display:none;">✓ ¡Nombre actualizado!</p>
+      <button class="btn-grad" style="margin-top: 14px;" onclick="saveNewName()">Guardar</button>
+    </div>
+  </div>
+
+  <!-- MODAL RECUPERAR CONTRASEÑA -->
+  <div id="m-recover" class="sheet-bg" onclick="if(event.target===this)this.classList.remove('open')">
+    <div class="sheet">
+      <h3 style="margin-bottom: 6px;">Recuperar contraseña</h3>
+      <p style="font-size: 13px; color: var(--muted); margin-bottom: 12px;">Enviaremos un enlace de recuperación a tu correo.</p>
+      <input id="m-rec-email" class="input-box" type="email" />
+      <button class="btn-grad" style="margin-top: 14px;" onclick="sendRecoverLink()">Enviar enlace</button>
+    </div>
+  </div>
+
+  <!-- MODAL CERRAR SESIÓN -->
+  <div id="m-logout" class="sheet-bg" onclick="if(event.target===this)this.classList.remove('open')">
+    <div class="sheet" style="text-align: center;">
+      <h3 style="margin-bottom: 6px;">¿Cerrar sesión?</h3>
+      <p style="font-size: 13px; color: var(--muted); margin-bottom: 18px;">Tu progreso y logros se guardarán.</p>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <button class="action-item" style="justify-content:center; margin:0;" onclick="document.getElementById('m-logout').classList.remove('open')">Cancelar</button>
+      <button class="btn-grad" style="margin:0;" onclick="clearActiveSession().then(() => window.location.href='index.html')">Confirmar</button>    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    let state = defaultState();
+    initAuthenticatedPage(loadedState => {
+      state = loadedState;
+      renderProfile();
+    });
+
+    function renderProfile() {
+      const av = document.getElementById("prof-avatar");
+      if (state.avatar) av.innerHTML = `<img src="${state.avatar}" alt="Avatar" />`;
+      else av.textContent = (state.username?.[0] || "A").toUpperCase();
+
+      document.getElementById("prof-name").textContent = state.username;
+      document.getElementById("cur-name-hint").textContent = `Actualmente: ${state.username}`;
+      document.getElementById("prof-email").textContent = state.email;
+      document.getElementById("st-colors").textContent = totalUniqueColors(state);
+      document.getElementById("st-searches").textContent = state.searches;
+      document.getElementById("st-cats").textContent = `${unlockedCategoriesCount(state)}/11`;
+
+      document.getElementById("cat-progress-list").innerHTML = COLOR_CATEGORIES.map(cat => {
+        const cnt = (state.discovered[cat.id] || []).length;
+        const pct = Math.min(100, cnt * 20);
+        return `
+          <div style="margin-bottom:10px;">
+            <div style="display:flex; justify-content:space-between; font-size:13px;">
+              <span style="display:flex; align-items:center; gap:8px;">
+                <span style="width:10px; height:10px; border-radius:999px; background:${cat.color}; display:inline-block;"></span>
+                ${cat.name}
+              </span>
+              <span style="color:var(--muted);">${cnt}</span>
+            </div>
+            <div class="bar-bg" style="margin-top:5px;"><div class="bar-fill" style="width:${pct}%;"></div></div>
+          </div>
+        `;
+      }).join("");
+    }
+    renderProfile();
+
+    async function changeAvatar(e) {
+      const f = e.target.files[0];
+      if (!f) return;
+      state.avatar = await compressImageToDataURL(f, 200);
+      await saveState(state);
+      renderProfile();
+      showToast("Foto de perfil actualizada");
+    }
+
+    function openRename() {
+      document.getElementById("new-name-input").value = state.username;
+      document.getElementById("name-ok").style.display = "none";
+      document.getElementById("m-rename").classList.add("open");
+    }
+
+    function saveNewName() {
+      const val = document.getElementById("new-name-input").value.trim();
+      if (!val) return;
+      state.username = val;
+      saveState(state);
+      renderProfile();
+      document.getElementById("name-ok").style.display = "block";
+      setTimeout(() => document.getElementById("m-rename").classList.remove("open"), 700);
+    }
+
+    function openRecoverModal() {
+      document.getElementById("m-rec-email").value = state.email || "";
+      document.getElementById("m-recover").classList.add("open");
+    }
+
+    async function sendRecoverLink() {
+      const mail = document.getElementById("m-rec-email").value.trim() || state.email;
+      document.getElementById("m-recover").classList.remove("open");
+      const res = await sendPasswordReset(mail);
+      showToast(res.ok ? `¡Enlace enviado! Revisa ${mail}` : res.error);
+    }
+  </script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("./sw.js").catch(() => {});
+    }
+  </script>
+</body>
+</html>
