@@ -243,31 +243,6 @@ async function loginWithGoogle() {
   }
 }
 
-// Recoge la sesión si el móvil usó redirección en lugar de ventana emergente
-auth.getRedirectResult().then(result => {
-  if (result && result.user) {
-    window.location.href = "scanner.html";
-  }
-}).catch(() => {});
-
-    const data = snap.data();
-    return {
-      ok: true,
-      isNew: false,
-      account: {
-        ...defaultState(),
-        ...data,
-        discovered: { ...emptyDiscovered(), ...(data.discovered || {}) }
-      }
-    };
-  } catch (err) {
-    if (err.code === "auth/popup-closed-by-user") {
-      return { ok: false, error: "Se cerró la ventana de inicio de sesión" };
-    }
-    return { ok: false, error: mapFirebaseAuthError(err.code) };
-  }
-}
-
 async function sendPasswordReset(email) {
   try {
     await auth.sendPasswordResetEmail(email.toLowerCase().trim());
