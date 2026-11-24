@@ -106,11 +106,20 @@
       err.textContent = "";
       window.location.href = result.isNew ? "onboarding.html" : "scanner.html";
     }
+    checkGoogleRedirectResult().then(res => {
+  if (res && res.ok) {
+    window.location.href = res.isNew ? "onboarding.html" : "scanner.html";
+  } else if (res && res.error) {
+    showToast(res.error);
+  }
+});
   </script>
   <script>
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("./sw.js").catch(() => {});
     }
+    
   </script>
+  
 </body>
 </html>
