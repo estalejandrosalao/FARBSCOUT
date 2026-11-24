@@ -207,20 +207,39 @@ async function loginUserAccount(email, password) {
 }
 
 async function loginWithGoogle() {
-  const provider = new firebase.auth.GoogleAuthProvider();
   try {
-    await auth.signInWithPopup(provider);
-    window.location.href = "scanner.html";
-  } catch (err) {
-    if (
-      err.code === "auth/popup-blocked" ||
-      err.code === "auth/operation-not-supported-in-this-environment"
-    ) {
-      await auth.signInWithRedirect(provider);
-    } else {
-      console.error(err);
-      showToast("No se pudo iniciar sesión con Google");
+    const provider = new firebase.auth.GoogleAuthProvider();
+    const cred = await auth.signInWithPopup(provider);
+    const user = cred.user;
+    const userRef = db.collection("users").doc(user.uid);
+    const snap = await userRef.get();
+
+    if (!snap.exists) {
+      const newState = {
+        ...defaultState(),
+        username: user.displayName || "Usuario",
+        email: user.email || "",
+        avatar: user.photoURL || ""
+      };
+      await userRef.set(newState);
+      return { ok: true, isNew: true, account: newState };
     }
+
+    const data = snap.data();
+    return {
+      ok: true,
+      isNew: false,
+      account: {
+        ...defaultState(),
+        ...data,
+        discovered: { ...emptyDiscovered(), ...(data.discovered || {}) }
+      }
+    };
+  } catch (err) {
+    if (err.code === "auth/popup-closed-by-user") {
+      return { ok: false, error: "Se cerró la ventana de inicio de sesión" };
+    }
+    return { ok: false, error: mapFirebaseAuthError(err.code) };
   }
 }
 
